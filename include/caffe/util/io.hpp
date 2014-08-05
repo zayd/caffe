@@ -73,6 +73,7 @@ inline bool ReadImageToDatum(const string& filename, const int label,
   return ReadImageToDatum(filename, label, 0, 0, datum);
 }
 
+bool ReadImageToData(const string& filename, string& data);
 
 template <typename Dtype>
 void hdf5_load_nd_dataset_helper(

@@ -114,6 +114,20 @@ bool ReadImageToDatum(const string& filename, const int label,
   return true;
 }
 
+bool ReadImageToData(const string& filename, string& data) {
+	cv::Mat cv_img = cv::imread(filename, CV_LOAD_IMAGE_COLOR);
+	for (int c = 0; c < 3; ++c) {
+	  for (int h = 0; h < cv_img.rows; ++h) {
+	    for (int w = 0; w < cv_img.cols; ++w) {
+	      data.push_back(
+	            static_cast<char>(cv_img.at<cv::Vec3b>(h, w)[c]));
+	    }
+	  }
+	}
+
+  return true;
+}
+
 // Verifies format of data stored in HDF5 file and reshapes blob accordingly.
 template <typename Dtype>
 void hdf5_load_nd_dataset_helper(

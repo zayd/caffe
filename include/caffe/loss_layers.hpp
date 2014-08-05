@@ -204,6 +204,25 @@ class HingeLossLayer : public LossLayer<Dtype> {
       const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
 };
 
+/* FvHingeLossLayer
+*/
+template <typename Dtype>
+class FvHingeLossLayer : public LossLayer<Dtype> {
+ public:
+  explicit FvHingeLossLayer(const LayerParameter& param)
+      : LossLayer<Dtype>(param) {}
+ 
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_FV_HINGE_LOSS;
+  }
+ 
+ protected:
+  virtual Dtype Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
+};
+
 /* MultinomialLogisticLossLayer
 */
 template <typename Dtype>
@@ -253,6 +272,31 @@ class AccuracyLayer : public Layer<Dtype> {
   }
 
   int top_k_;
+};
+
+/* BinaryAccuracyLayer
+  Note: not an actual loss layer! Does not implement backwards step.
+  Computes the accuracy and logprob of a with respect to b.
+*/
+template <typename Dtype>
+class BinaryAccuracyLayer : public Layer<Dtype> {
+ public:
+  explicit BinaryAccuracyLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void SetUp(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+   
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_ACCURACY;
+  }
+
+ protected:
+  virtual Dtype Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,   
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {
+    NOT_IMPLEMENTED;
+  }
 };
 
 }  // namespace caffe

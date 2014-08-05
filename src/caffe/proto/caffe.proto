@@ -166,6 +166,9 @@ message LayerParameter {
     TANH = 23;
     WINDOW_DATA = 24;
     THRESHOLD = 31;
+    IMAGE_PAIR_DATA = 101;
+    FV_HINGE_LOSS = 102;
+    BINARY_ACCURACY = 103;
   }
   optional LayerType type = 5; // the layer type from the enum above
 
@@ -201,6 +204,7 @@ message LayerParameter {
   optional HDF5DataParameter hdf5_data_param = 13;
   optional HDF5OutputParameter hdf5_output_param = 14;
   optional ImageDataParameter image_data_param = 15;
+  optional ImagePairDataParameter image_pair_data_param = 201;
   optional InfogainLossParameter infogain_loss_param = 16;
   optional InnerProductParameter inner_product_param = 17;
   optional LRNParameter lrn_param = 18;
@@ -363,6 +367,34 @@ message ImageDataParameter {
   // It will also resize images if new_height or new_width are not zero.
   optional uint32 new_height = 9 [default = 0];
   optional uint32 new_width = 10 [default = 0];
+}
+
+message ImagePairDataParameter {
+  // Specify the data source.
+  optional string source = 1;
+  // Specify path to source
+  optional string relative_path = 2;
+  // For data pre-processing, we can do simple scaling and subtracting the
+  // data mean, if provided. Note that the mean subtraction is always carried
+  // out before scaling.
+  optional float scale = 3 [default = 1];
+  optional string mean_file = 4;
+  // Specify the batch size.
+  optional uint32 batch_size = 5;
+  // Specify if we would like to randomly crop an image.
+  optional uint32 crop_size = 6 [default = 0];
+  // Specify if we want to randomly mirror data.
+  optional bool mirror = 7 [default = false];
+  // The rand_skip variable is for the data layer to skip a few data points
+  // to avoid all asynchronous sgd clients to start at the same point. The skip
+  // point would be set as rand_skip * rand(0,1). Note that rand_skip should not
+  // be larger than the number of keys in the leveldb.
+  optional uint32 rand_skip = 8 [default = 0];
+  // Whether or not ImageLayer should shuffle the list of files at every epoch.
+  optional bool shuffle = 9 [default = false];
+  // It will also resize images if new_height or new_width are not zero.
+  optional uint32 new_height = 10 [default = 0];
+  optional uint32 new_width = 11 [default = 0];
 }
 
 // Message that stores parameters InfogainLossLayer

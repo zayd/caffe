@@ -235,6 +235,45 @@ class ImageDataLayer : public Layer<Dtype> {
   Caffe::Phase phase_;
 };
 
+// This function is used to create a pthread that prefetches the data.
+template <typename Dtype>
+void* ImagePairDataLayerPrefetch(void* layer_pointer);
+
+template <typename Dtype>
+class ImagePairDataLayer : public Layer<Dtype> {
+  // The function used to perform prefetching.
+  friend void* ImagePairDataLayerPrefetch<Dtype>(void* layer_pointer);
+
+ public:
+  explicit ImagePairDataLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual ~ImagePairDataLayer();
+  virtual void SetUp(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+
+ protected:
+  virtual Dtype Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual Dtype Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {}
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {}
+
+  vector<std::pair<std::pair<std::string, std::string>, int> > lines_;
+  int lines_id_;
+  int channels_;
+  int height_;
+  int width_;
+  int size_;
+  pthread_t thread_;
+  shared_ptr<Blob<Dtype> > prefetch_data_a_;
+  shared_ptr<Blob<Dtype> > prefetch_data_b_;
+  shared_ptr<Blob<Dtype> > prefetch_label_;
+  Blob<Dtype> data_mean_;
+};
+
 /* MemoryDataLayer
 */
 template <typename Dtype>

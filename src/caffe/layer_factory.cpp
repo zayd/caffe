@@ -26,6 +26,8 @@ Layer<Dtype>* GetLayer(const LayerParameter& param) {
     return new AccuracyLayer<Dtype>(param);
   case LayerParameter_LayerType_ARGMAX:
     return new ArgMaxLayer<Dtype>(param);
+  case LayerParameter_LayerType_BINARY_ACCURACY:
+    return new BinaryAccuracyLayer<Dtype>(param);
   case LayerParameter_LayerType_BNLL:
     return new BNLLLayer<Dtype>(param);
   case LayerParameter_LayerType_CONCAT:
@@ -44,6 +46,8 @@ Layer<Dtype>* GetLayer(const LayerParameter& param) {
     return new EltwiseLayer<Dtype>(param);
   case LayerParameter_LayerType_FLATTEN:
     return new FlattenLayer<Dtype>(param);
+  case LayerParameter_LayerType_FV_HINGE_LOSS:
+    return new FvHingeLossLayer<Dtype>(param);
   case LayerParameter_LayerType_HDF5_DATA:
     return new HDF5DataLayer<Dtype>(param);
   case LayerParameter_LayerType_HDF5_OUTPUT:
@@ -52,6 +56,8 @@ Layer<Dtype>* GetLayer(const LayerParameter& param) {
     return new HingeLossLayer<Dtype>(param);
   case LayerParameter_LayerType_IMAGE_DATA:
     return new ImageDataLayer<Dtype>(param);
+  case LayerParameter_LayerType_IMAGE_PAIR_DATA:
+    return new ImagePairDataLayer<Dtype>(param);
   case LayerParameter_LayerType_IM2COL:
     return new Im2colLayer<Dtype>(param);
   case LayerParameter_LayerType_INFOGAIN_LOSS:
@@ -82,6 +88,8 @@ Layer<Dtype>* GetLayer(const LayerParameter& param) {
     return new SplitLayer<Dtype>(param);
   case LayerParameter_LayerType_TANH:
     return new TanHLayer<Dtype>(param);
+  case LayerParameter_LayerType_THRESHOLD:
+    return new ThresholdLayer<Dtype>(param);
   case LayerParameter_LayerType_WINDOW_DATA:
     return new WindowDataLayer<Dtype>(param);
   case LayerParameter_LayerType_DISTANCE:
