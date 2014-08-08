@@ -18,7 +18,8 @@ def load_image(filename, color=True):
     image: an image with type np.float32 of size (H x W x 3) in RGB or
         of size (H x W x 1) in grayscale.
     """
-    img = skimage.img_as_float(skimage.io.imread(filename)).astype(np.float32)
+    #img = skimage.img_as_float(skimage.io.imread(filename)).astype(np.float32)
+    img = (skimage.io.imread(filename)).astype(np.float32)
     if img.ndim == 2:
         img = img[:, :, np.newaxis]
         if color:

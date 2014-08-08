@@ -262,14 +262,19 @@ def _Net_preprocess(self, input_name, input_):
     mean = self.mean.get(input_name)
     in_size = self.blobs[input_name].data.shape[2:]
     if caffe_in.shape[:2] != in_size:
+        raise "This should not happen"
         caffe_in = caffe.io.resize_image(caffe_in, in_size)
-    if input_scale:
-        caffe_in *= input_scale
     if channel_order:
         caffe_in = caffe_in[:, :, channel_order]
+
     caffe_in = caffe_in.transpose((2, 0, 1))
     if mean is not None:
         caffe_in -= mean
+    else:
+        raise "Did not mean subtract input image"
+    if input_scale:
+        caffe_in *= input_scale
+
     return caffe_in
 
 
