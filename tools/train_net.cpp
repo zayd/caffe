@@ -15,8 +15,8 @@ using namespace caffe;  // NOLINT(build/namespaces)
 
 int main(int argc, char** argv) {
   ::google::InitGoogleLogging(argv[0]);
-  if (argc < 2 || argc > 3) {
-    LOG(ERROR) << "Usage: train_net solver_proto_file [resume_point_file]";
+  if (argc < 2 || argc > 4) {
+    LOG(ERROR) << "Usage: train_net solver_proto_file [gpu_id] [resume_point_file]";
     return 1;
   }
 
@@ -26,9 +26,15 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Starting Optimization";
   SGDSolver<float> solver(solver_param);
   if (argc == 3) {
-    LOG(INFO) << "Resuming from " << argv[2];
-    solver.Solve(argv[2]);
-  } else {
+      LOG(INFO) << "Using GPU " << argv[2];
+      Caffe::SetDevice(atoi(argv[2]));
+      solver.Solve();
+  }
+  else if (argc == 4) {
+    LOG(INFO) << "Resuming from " << argv[3];
+    solver.Solve(argv[3]);
+  } 
+  else {
     solver.Solve();
   }
   LOG(INFO) << "Optimization Done.";
