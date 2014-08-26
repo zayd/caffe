@@ -40,10 +40,11 @@ void* ImageDataLayerPrefetch(void* layer_pointer) {
   const int new_height = image_data_param.new_height();
   const int new_width = image_data_param.new_width();
 
-  if (mirror && crop_size == 0) {
+  /* if (mirror && crop_size == 0) {
     LOG(FATAL) << "Current implementation requires mirror and crop_size to be "
         << "set at the same time.";
-  }
+  }*/
+  
   // datum scales
   const int channels = layer->datum_channels_;
   const int height = layer->datum_height_;
@@ -100,7 +101,35 @@ void* ImageDataLayerPrefetch(void* layer_pointer) {
           }
         }
       }
-    } else {
+    } 
+    else if (mirror && layer->PrefetchRand() % 2) { 
+        CHECK(data.size()) << "Image cropping only support uint8 data";
+        // Copy mirrored version; do not crop
+        for (int c = 0; c < channels; ++c) {
+          for (int h = 0; h < height; ++h) {
+            for (int w = 0; w < width; ++w) {
+              int top_index = ((item_id * channels + c) * height + h)
+                              * width + (width - 1 - w);
+              int data_index = (c * height + h) * width + w;
+              Dtype datum_element =
+                  static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
+              top_data[top_index] = (datum_element - mean[data_index]) * scale;
+            }
+          }
+        }
+        /*
+        int c = 1; int h = 10;
+        string src, dst;
+        for (int w = 0; w < width; ++w) {
+          int top_index = ((item_id * channels + c) * height + h)
+                          * width + (width - 1 - w);
+          int data_index = (c * height + h) * width + w;
+          LOG(INFO) << "bottom, w: " << w << " value: " << static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
+          LOG(INFO) << "top, w: " << w << " value: " << (top_data[top_index] / scale) + mean[data_index];
+        }
+        */
+    }
+    else {
       // Just copy the whole data
       if (data.size()) {
         for (int j = 0; j < size; ++j) {
@@ -236,7 +265,8 @@ void ImageDataLayer<Dtype>::CreatePrefetchThread() {
   phase_ = Caffe::phase();
   const bool prefetch_needs_rand =
       this->layer_param_.image_data_param().shuffle() ||
-      this->layer_param_.image_data_param().crop_size();
+      this->layer_param_.image_data_param().crop_size() || 
+      this->layer_param_.image_data_param().mirror();
   if (prefetch_needs_rand) {
     const unsigned int prefetch_rng_seed = caffe_rng_rand();
     prefetch_rng_.reset(new Caffe::RNG(prefetch_rng_seed));
