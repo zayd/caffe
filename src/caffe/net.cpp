@@ -5,6 +5,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <boost/algorithm/string.hpp>
+#include <google/protobuf/text_format.h>
 
 #include "caffe/common.hpp"
 #include "caffe/proto/caffe.pb.h"
@@ -19,6 +21,8 @@ using std::make_pair;
 using std::map;
 using std::pair;
 using std::set;
+
+using boost::replace_all;
 
 namespace caffe {
 
@@ -36,11 +40,16 @@ Net<Dtype>::Net(const string& param_file) {
 
 template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
+  // Expand imports
+  NetParameter expanded(in_param);
+  expanded.mutable_layers()->Clear();
+  expand(in_param, expanded, "");
+  
   LOG(INFO) << "Initializing net from parameters: " << std::endl
             << in_param.DebugString();
   // Create a copy of in_param with splits added where necessary.
   NetParameter param;
-  InsertSplits(in_param, &param);
+  InsertSplits(expanded, &param);
   // Basically, build all the layers and set up its connections.
   name_ = param.name();
   map<string, int> blob_name_to_idx;
@@ -291,6 +300,58 @@ void Net<Dtype>::AppendParam(const NetParameter& param, const int layer_id,
 }
 
 template <typename Dtype>
+string Net<Dtype>::resolve(const string& path, const string& pwd) {
+  CHECK(!boost::starts_with(pwd, "/") && !boost::ends_with(pwd, "/"));
+  if(boost::starts_with(path, "/"))
+    return path.substr(1, path.size() - 1);
+  string cpath = path;
+  string cpwd = pwd;
+  if(boost::starts_with(path, "../")) {
+    cpath = path.substr(3, path.size() - 3);
+    size_t i = pwd.find_last_of('/');
+    cpwd = i == string::npos ? "" : pwd.substr(0, i);
+  }
+  if(!cpwd.size())
+    return cpath;
+  if(!cpath.size() || cpath == ".")
+    return cpwd;
+  return cpwd + '/' + cpath;
+}
+
+template <typename Dtype>
+void Net<Dtype>::expand(const NetParameter& source, NetParameter& target,
+    const string& pwd) {
+  for (int i = 0; i < source.layers_size(); ++i) {
+    if(source.layers(i).type() == LayerParameter_LayerType_IMPORT) {
+      CHECK(source.layers(i).has_import_param()) << "Missing import_param";
+      const ImportParameter& import = source.layers(i).import_param();
+      string proto = ReadFile(import.source());
+      // Replace variables and references
+      for (int j = 0; j < import.var_size(); ++j) {
+        const Pair& p = import.var(j);
+        replace_all(proto, "${" + p.name() + "}", p.value());
+      }
+      for (int j = 0; j < import.ref_size(); ++j) {
+        const Pair& p = import.ref(j);
+        replace_all(proto, "${" + p.name() + "}", '/' + resolve(p.value(), pwd));
+      }
+      NetParameter net;
+      bool parse = google::protobuf::TextFormat::ParseFromString(proto, &net);
+      CHECK(parse) << "Failed to parse NetParameter file: " << import.source();
+      expand(net, target, resolve(import.target(), pwd));
+    } else {
+      LayerParameter *t = target.mutable_layers()->Add();
+      t->CopyFrom(source.layers(i));
+      t->set_name(resolve(t->name(), pwd));
+      for (int j = 0; j < source.layers(i).top_size(); ++j)
+        t->set_top(j, resolve(source.layers(i).top(j), pwd));
+      for (int j = 0; j < source.layers(i).bottom_size(); ++j)
+        t->set_bottom(j, resolve(source.layers(i).bottom(j), pwd));
+    }
+  }
+}
+
+template <typename Dtype>
 void Net<Dtype>::GetLearningRateAndWeightDecay() {
   LOG(INFO) << "Collecting Learning Rate and Weight Decay.";
   for (int i = 0; i < layers_.size(); ++i) {
@@ -419,16 +480,17 @@ void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
   for (int i = 0; i < num_source_layers; ++i) {
     const LayerParameter& source_layer = param.layers(i);
     const string& source_layer_name = source_layer.name();
+    LOG(INFO) << "Looking at source layer: " << source_layer.name();
     int target_layer_id = 0;
     while (target_layer_id != layer_names_.size() &&
         layer_names_[target_layer_id] != source_layer_name) {
       ++target_layer_id;
     }
     if (target_layer_id == layer_names_.size()) {
-      DLOG(INFO) << "Ignoring source layer " << source_layer_name;
+      LOG(INFO) << "Ignoring source layer " << source_layer_name;
       continue;
     }
-    DLOG(INFO) << "Copying source layer " << source_layer_name;
+    LOG(INFO) << "Copying source layer " << source_layer_name;
     vector<shared_ptr<Blob<Dtype> > >& target_blobs =
         layers_[target_layer_id]->blobs();
     CHECK_EQ(target_blobs.size(), source_layer.blobs_size())

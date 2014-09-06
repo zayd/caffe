@@ -61,6 +61,7 @@ void* ImagePairDataLayerPrefetch(void* layer_pointer) {
     if (!ReadImageToData(layer->lines_[layer->lines_id_].first.first, data_a)) {
       continue;
     }
+    //LOG(INFO) << "File looking for: " << layer->lines_[layer->lines_id_].first.first;
     CHECK_GT(data_a.size(), 0);
 
 //    LOG(INFO) << "loading " << layer->lines_[layer->lines_id_].first.second;

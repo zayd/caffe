@@ -130,6 +130,40 @@ class ConvolutionLayer : public Layer<Dtype> {
   int N_;
 };
 
+template <typename Dtype>
+class LocalWeightedConvolutionLayer : public Layer<Dtype> {
+ public:
+  explicit LocalWeightedConvolutionLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void SetUp(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+
+ protected:
+  virtual Dtype Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual Dtype Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom);
+
+  int kernel_size_;
+  int stride_;
+  int num_;
+  int channels_;
+  int pad_;
+  int height_;
+  int width_;
+  int num_output_;
+  Blob<Dtype> col_buffer_;
+  shared_ptr<SyncedMemory> bias_multiplier_;
+  bool bias_term_;
+  int M_;
+  int K_;
+  int N_;
+};
+
 /* DistanceLayer
 
   y = b + \sum_i w_i f( x0_i - x1_i )

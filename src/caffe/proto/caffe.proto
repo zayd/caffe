@@ -169,6 +169,8 @@ message LayerParameter {
     IMAGE_PAIR_DATA = 101;
     FV_HINGE_LOSS = 102;
     BINARY_ACCURACY = 103;
+    IMPORT = 106;
+    LOCAL_WEIGHTED_CONVOLUTION = 107;
   }
   optional LayerType type = 5; // the layer type from the enum above
 
@@ -214,11 +216,31 @@ message LayerParameter {
   optional WindowDataParameter window_data_param = 20;
   optional ThresholdParameter threshold_param = 25;
   optional HingeLossParameter hinge_loss_param = 29;
-
+  optional ImportParameter import_param = 101;
+  optional LocalWeightedConvolutionParameter local_weighted_convolution_param = 102;
   // DEPRECATED: The layer parameters specified as a V0LayerParameter.
   // This should never be used by any code except to upgrade to the new
   // LayerParameter specification.
   optional V0LayerParameter layer = 1;
+}
+
+// Message that stores parameters used by ImportLayer
+message ImportParameter {
+    // Proto file to import
+    required string source = 1;
+    // Path to prefix to relative names during import. E.g. the same subnet
+    // can be imported twice, with layers called left/*, and right/*
+    optional string target = 2 [default = "."];
+    // Variable names to replace before importing the file. Variables can
+    // be used in the file in this format: ${name}
+    repeated Pair var = 3;
+    // Reference to an item in the network
+    repeated Pair ref = 4;
+}
+
+message Pair {
+   required string name = 1;
+   required string value = 2;
 }
 
 // Message that stores parameters used by AccuracyLayer
@@ -250,6 +272,17 @@ message ConvolutionParameter {
   optional uint32 pad = 3 [default = 0]; // The padding size
   optional uint32 kernel_size = 4; // The kernel size
   optional uint32 group = 5 [default = 1]; // The group size for group conv
+  optional uint32 stride = 6 [default = 1]; // The stride
+  optional FillerParameter weight_filler = 7; // The filler for the weight
+  optional FillerParameter bias_filler = 8; // The filler for the bias
+}
+
+// Message that stores parameters used by ConvolutionLayer
+message LocalWeightedConvolutionParameter {
+  optional uint32 num_output = 1; // The number of outputs for the layer
+  optional bool bias_term = 2 [default = true]; // whether to have bias terms
+  optional uint32 pad = 3 [default = 0]; // The padding size
+  optional uint32 kernel_size = 4; // The kernel size
   optional uint32 stride = 6 [default = 1]; // The stride
   optional FillerParameter weight_filler = 7; // The filler for the weight
   optional FillerParameter bias_filler = 8; // The filler for the bias

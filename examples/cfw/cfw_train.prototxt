@@ -7,8 +7,9 @@ layers {
   image_data_param {
     source: "../../data/cfw/cfw_train_random.txt"
     mean_file: "../../data/cfw/mean.binaryproto"
-    scale: 0.00390625
     batch_size: 64
+    scale: 0.00390625
+    mirror: true
     shuffle: false
   }
 }
@@ -18,16 +19,19 @@ layers {
   bottom: "data"
   top: "conv1"
   blobs_lr: 1
-  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
   convolution_param {
-    num_output: 25
-    kernel_size: 7
+    num_output: 40
+    kernel_size: 11
     stride: 1
     weight_filler {
       type: "xavier"
     }   
     bias_filler {
       type: "constant"
+      value: 0
     }
   }
 }
@@ -65,9 +69,11 @@ layers {
   bottom: "norm1"
   top: "conv2"
   blobs_lr: 1
-  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
   convolution_param {
-    num_output: 49
+    num_output: 40
     kernel_size: 5
     stride: 1
     weight_filler {
@@ -75,6 +81,7 @@ layers {
     }
     bias_filler {
       type: "constant"
+      value: 0
     }
   }
 }
@@ -112,9 +119,11 @@ layers {
   bottom: "norm2"
   top: "conv3"
   blobs_lr: 1
-  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
   convolution_param {
-    num_output: 64
+    num_output: 60
     kernel_size: 5
     stride: 1
     weight_filler {
@@ -122,6 +131,7 @@ layers {
     }
     bias_filler {
       type: "constant"
+      value: 0
     }
   }
 }
@@ -143,27 +153,97 @@ layers {
   }
 }
 layers {
-  name: "norm3"
-  type: LRN
+  name: "local1"
+  type: LOCAL_WEIGHTED_CONVOLUTION
   bottom: "pool3"
-  top: "norm3"
-  lrn_param {
-    local_size: 5
-    alpha: 0.0001
-    beta: 0.75
+  top: "local1"
+  blobs_lr: 1
+  blobs_lr: 2
+  local_weighted_convolution_param {
+    num_output: 10
+    kernel_size: 5
+    stride: 2
+    pad: 0
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1   
+    }
   }
+}
+layers {
+  name: "relu4"
+  type: RELU
+  bottom: "local1" 
+  top: "local1"
+}
+layers {
+  name: "local2"
+  type: LOCAL_WEIGHTED_CONVOLUTION
+  bottom: "local1"
+  top: "local2"
+  blobs_lr: 1
+  blobs_lr: 2
+  local_weighted_convolution_param {
+    num_output: 10
+    kernel_size: 5
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1   
+    }
+  }
+}
+layers {
+  name: "relu5"
+  type: RELU
+  bottom: "local2" 
+  top: "local2"  
+}
+layers {
+  name: "local3"
+  type: LOCAL_WEIGHTED_CONVOLUTION
+  bottom: "local2"
+  top: "local3"
+  blobs_lr: 1
+  blobs_lr: 2
+  local_weighted_convolution_param {
+    num_output: 10
+    kernel_size: 3
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1   
+    }
+  }
+}
+layers {
+  name: "relu6"
+  type: RELU
+  bottom: "local3" 
+  top: "local3"  
 }
 layers {
   name: "ip1"
   type: INNER_PRODUCT
-  bottom: "norm3"
+  bottom: "local3"
   top: "ip1"
   blobs_lr: 1
   blobs_lr: 2
   weight_decay: 0
   weight_decay: 0
   inner_product_param {
-    num_output: 1024
+    num_output: 1536
     weight_filler {
       type: "gaussian"
       std: 0.005
@@ -175,7 +255,7 @@ layers {
   }
 }
 layers {
-  name: "relu4"
+  name: "relu7"
   type: RELU
   bottom: "ip1" 
   top: "ip1"
@@ -190,7 +270,7 @@ layers {
   weight_decay: 0
   weight_decay: 0
   inner_product_param {
-    num_output: 1581
+    num_output: 1580
     weight_filler {
       type: "gaussian"
       std: 0.005
@@ -202,14 +282,14 @@ layers {
   }
 }
 layers {
-  name: "relu5"
+  name: "relu8"
   type: RELU
   bottom: "ip2" 
-  top: "relu4"
+  top: "ip2"
 }
 layers {
   name: "loss"
   type: SOFTMAX_LOSS 
-  bottom: "relu4"
+  bottom: "ip2"
   bottom: "label"
 }

@@ -158,12 +158,17 @@ int main(int argc, char** argv) {
 
   // Clean up
   if (db_backend == "leveldb") {
+    LOG(INFO) << "Attempting leveldb cleanup";
+    delete it;
     delete db;
+    LOG(INFO) << "Successful leveldb cleanup";
   } else if (db_backend == "lmdb") {
+    LOG(INFO) << "Attempting lmdb cleanup";
     mdb_cursor_close(mdb_cursor);
     mdb_close(mdb_env, mdb_dbi);
     mdb_txn_abort(mdb_txn);
     mdb_env_close(mdb_env);
+    LOG(INFO) << "Successful lmdb cleanup";
   } else {
     LOG(FATAL) << "Unknown db backend " << db_backend;
   }

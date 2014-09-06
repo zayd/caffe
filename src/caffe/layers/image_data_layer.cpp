@@ -64,21 +64,24 @@ void* ImageDataLayerPrefetch(void* layer_pointer) {
     if (crop_size) {
       CHECK(data.size()) << "Image cropping only support uint8 data";
       int h_off, w_off;
+      int crop_size_h = height - crop_size;
+      int crop_size_w = width - crop_size;
+
       // We only do random crop when we do training.
       if (layer->phase_ == Caffe::TRAIN) {
-        h_off = layer->PrefetchRand() % (height - crop_size);
-        w_off = layer->PrefetchRand() % (width - crop_size);
+        h_off = layer->PrefetchRand() % crop_size;
+        w_off = layer->PrefetchRand() % crop_size;
       } else {
-        h_off = (height - crop_size) / 2;
-        w_off = (width - crop_size) / 2;
+        h_off = crop_size / 2;
+        w_off = crop_size / 2;
       }
       if (mirror && layer->PrefetchRand() % 2) {
         // Copy mirrored version
         for (int c = 0; c < channels; ++c) {
-          for (int h = 0; h < crop_size; ++h) {
-            for (int w = 0; w < crop_size; ++w) {
-              int top_index = ((item_id * channels + c) * crop_size + h)
-                              * crop_size + (crop_size - 1 - w);
+          for (int h = 0; h < crop_size_h; ++h) {
+            for (int w = 0; w < crop_size_w; ++w) {
+              int top_index = ((item_id * channels + c) * crop_size_h + h)
+                              * crop_size_w + (crop_size_w - 1 - w);
               int data_index = (c * height + h + h_off) * width + w + w_off;
               Dtype datum_element =
                   static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
@@ -89,10 +92,10 @@ void* ImageDataLayerPrefetch(void* layer_pointer) {
       } else {
         // Normal copy
         for (int c = 0; c < channels; ++c) {
-          for (int h = 0; h < crop_size; ++h) {
-            for (int w = 0; w < crop_size; ++w) {
-              int top_index = ((item_id * channels + c) * crop_size + h)
-                              * crop_size + w;
+          for (int h = 0; h < crop_size_h; ++h) {
+            for (int w = 0; w < crop_size_w; ++w) {
+              int top_index = ((item_id * channels + c) * crop_size_h + h)
+                              * crop_size_w + w;
               int data_index = (c * height + h + h_off) * width + w + w_off;
               Dtype datum_element =
                   static_cast<Dtype>(static_cast<uint8_t>(data[data_index]));
@@ -211,10 +214,17 @@ void ImageDataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
   const int crop_size = this->layer_param_.image_data_param().crop_size();
   const int batch_size = this->layer_param_.image_data_param().batch_size();
   const string& mean_file = this->layer_param_.image_data_param().mean_file();
+
+  LOG(INFO) << "Inside setup";
+
   if (crop_size > 0) {
-    (*top)[0]->Reshape(batch_size, datum.channels(), crop_size, crop_size);
+    LOG(INFO) << "Reshaping datum to" << datum.height() << " " << crop_size;
+    (*top)[0]->Reshape(batch_size, datum.channels(),
+                       datum.height() - crop_size,
+                       datum.width() - crop_size);
     prefetch_data_.reset(new Blob<Dtype>(batch_size, datum.channels(),
-                                         crop_size, crop_size));
+                                         datum.height() - crop_size,
+                                         datum.width() - crop_size));
   } else {
     (*top)[0]->Reshape(batch_size, datum.channels(), datum.height(),
                        datum.width());

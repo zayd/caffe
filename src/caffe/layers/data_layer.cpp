@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <leveldb/db.h>
 #include <pthread.h>
+#include <sys/stat.h>
 
 #include <string>
 #include <vector>
@@ -199,9 +200,16 @@ void DataLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
   case DataParameter_DB_LMDB:
     CHECK_EQ(mdb_env_create(&mdb_env_), MDB_SUCCESS) << "mdb_env_create failed";
     CHECK_EQ(mdb_env_set_mapsize(mdb_env_, 1099511627776), MDB_SUCCESS);  // 1TB
+    // If DB is stand-alone file, don't try to lock. Allows read-only locations.
+    struct stat st_buf;
+    stat (this->layer_param_.data_param().source().c_str(), &st_buf);
+    unsigned int flags;
+    flags = MDB_RDONLY|MDB_NOTLS;
+    if (S_ISREG (st_buf.st_mode))
+      flags |= MDB_NOLOCK|MDB_NOSUBDIR;
     CHECK_EQ(mdb_env_open(mdb_env_,
              this->layer_param_.data_param().source().c_str(),
-             MDB_RDONLY|MDB_NOTLS, 0664), MDB_SUCCESS) << "mdb_env_open failed";
+             flags, 0664), MDB_SUCCESS) << "mdb_env_open failed";
     CHECK_EQ(mdb_txn_begin(mdb_env_, NULL, MDB_RDONLY, &mdb_txn_), MDB_SUCCESS)
         << "mdb_txn_begin failed";
     CHECK_EQ(mdb_open(mdb_txn_, NULL, 0, &mdb_dbi_), MDB_SUCCESS)

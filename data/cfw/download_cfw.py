@@ -34,15 +34,15 @@ def celeb_download(celeb):
 
 	CFW_DIR = '/Users/zayd/Documents/face/data/cfw/'
 	CFW_DST_DIR = '/Users/zayd/Documents/face/data/cfw_full2/'
-	
+
 	TIMEOUT = 0.25
 	socket.setdefaulttimeout(TIMEOUT)
 
 	if not os.path.exists(CFW_DST_DIR + celeb):
 		os.makedirs(CFW_DST_DIR + celeb)
-	
+
 	info = open(CFW_DIR + celeb + '/info.txt', 'r')
-	
+
 	i = 0
 	num = int(info.readline().split('\t')[0])
 	print "Celeb: " + celeb
@@ -58,7 +58,7 @@ def celeb_download(celeb):
 			#we've reached the last batch of images
 		elif not images:
 			break
-	
+
 		#if not os.path.exists(CFW_DST_DIR + celeb + '/' + str(i)):
 			#os.makedirs(CFW_DST_DIR + celeb + '/' + str(i))
 
@@ -87,9 +87,8 @@ def celeb_download(celeb):
 					print "Too small"
 					os.remove(img_dir)
 					pass
-			
+
 		i += 1
-CELEB_LIST = os.listdir(CFW_DIR)[192:1360] # Blake Lively to Sarah Mclachlan [incliuded]
-#CELEB_LIST.sort()
+CELEB_LIST = os.listdir(CFW_DIR)
 dview.map_sync(celeb_download, CELEB_LIST)
 
